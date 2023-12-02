@@ -20,9 +20,7 @@ def to_digits(given):
         match, value = scan(given)
         if match:
             digits.append(value)
-            given = given[len(match):]
-        else:
-            given = given[1:]
+        given = given[1:]
     return digits
 
 
