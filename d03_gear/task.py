@@ -66,7 +66,7 @@ class Symbol(SchematicElement):
                 number for number in schematic.numbers
                 if list(adjacent & set(range(number.start, number.end+1)))
             ]
-        return len(self.adjacent_numbers) == 2
+        return len(self.adjacent_numbers) == 2 and self.match == '*'
 
     @property
     def ratio(self):
