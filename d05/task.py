@@ -19,6 +19,7 @@ def read_until_empty_line(stream):
 
 
 def read_seeds_task_one(stream):
+    '''e.g. seeds: 79 14 55 13'''
     blob = read_until_empty_line(stream)
     _, numbers = blob[0].split(':')
     return [int(n) for n in numbers.strip().split()]
@@ -30,6 +31,9 @@ def chunks(iterable, size):
 
 
 def read_seeds_task_two(stream):
+    '''e.g. seeds: 79 14 55 13'''
+    numbers = read_seeds_task_one(stream)
+    while 
     return [
         ValueRange(start, start+magnitude, magnitude)
         for start, magnitude in chunks(read_seeds_task_one(stream), 2)
