@@ -17,7 +17,7 @@ def winning(distance, strategy):
     return strategy.distance > distance
 
 
-def calculate_shortest_button_press(race):
+def shortest_button_press(race):
     lower = 1
     upper = race.time//2
     while True:
@@ -32,7 +32,7 @@ def calculate_shortest_button_press(race):
             lower = strategy.button_press+1
 
 
-def calculate_longest_button_press(race):
+def longest_button_press(race):
     lower = race.time//2
     upper = race.time
     while True:
@@ -60,13 +60,11 @@ def parse_races_task_two(stream):
 
 
 def margin(race):
-    time, distance_record = race
-    distances = map(lambda n: Strategy(n, n*(time-n)), range(time+1))
-    return [strategy.button_press for strategy in distances if strategy.distance > distance_record]
+    return range(shortest_button_press(race), longest_button_press(race)+1)
 
 
 def margin_search(race):
-    return calculate_longest_button_press(race)-calculate_shortest_button_press(race)+1
+    return longest_button_press(race)-shortest_button_press(race)+1
 
 
 # print(reduce(mul, map(len, map(margin, parse_races_task_one(sys.stdin)))))
