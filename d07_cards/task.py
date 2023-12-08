@@ -1,94 +1,87 @@
-
-from enum import Enum
+from collections import namedtuple
+from functools import cmp_to_key
+from operator import itemgetter
 import sys
 
-
-CARD_VALUES = {
-    'A': 14,
-    'K': 13,
-    'Q': 12,
-    'J': 11,
-    'T': 10,
-    '9': 9,
-    '8': 8,
-    '7': 7,
-    '6': 6,
-    '5': 5,
-    '4': 4,
-    '3': 3,
-    '2': 2,
-}
+# ~~~~~~~~
+TASK = 2
+# ~~~~~~~~
 
 
-FIVE_OF_A_KIND = 7
-FOUR_OF_A_KIND = 6
-FULL_HOUSE = 5
-THREE_OF_A_KIND = 4
-TWO_PAIRS = 3
-PAIR = 2
-HIGH_CARD = 1
+Trick = namedtuple('Trick', ['hand', 'bid'])
+CARDS = '23456789TJQKA' if TASK == 1 else 'J23456789TQKA'
+HANDS = [
+    ('five_of_a_kind',  7, lambda a: set_of(5, a)),
+    ('four_of_a_kind',  6, lambda a: set_of(4, a)),
+    ('full_house',      5, lambda a: set_of(3, a) and set_of(2, a)),
+    ('three_of_a_kind', 4, lambda a: set_of(3, a)),
+    ('two_pair',        3, lambda a: len(pairs(a)) == 2),
+    ('one_pair',        2, lambda a: set_of(2, a)),
+    ('high_card',       1, lambda a: True),
+]
 
 
-def evaluate(cards):
-    values = [CARD_VALUES[c] for c in cards]
-    for card in values:
-        if values.count(card) == 5:
-            return FIVE_OF_A_KIND
-        elif values.count(card) == 4:
-            return FOUR_OF_A_KIND
-        elif values.count(card) == 3:
-            for others in [c for c in values if c != card]:
-                if values.count(others) == 2:
-                    return FULL_HOUSE
-            return THREE_OF_A_KIND
-        elif values.count(card) == 2:
-            for others in [c for c in values if c != card]:
-                if values.count(others) == 3:
-                    return FULL_HOUSE
-            for others in [c for c in values if c != card]:
-                if values.count(others) == 2:
-                    return TWO_PAIRS
-            return PAIR
-    return HIGH_CARD
+def card_count(hand):
+    return {card: hand.count(card) for card in hand}
 
 
-class Hand:
-    def __init__(self, cards, bid):
-        self.cards = cards
-        self.card_values = [CARD_VALUES[c] for c in cards]
-        self.bid = bid
-        self.evaluation = evaluate(cards)
-
-    def __lt__(self, other):
-        if self.evaluation != other.evaluation:
-            return self.evaluation < other.evaluation
-        for s, o in zip(self.card_values, other.card_values):
-            if s != o:
-                return s < o
-        return False
-
-    def __eq__(self, other):
-        return self.evaluation == other.evaluation and self.cards == other.cards
-
-    def __str__(self):
-        eval = [0, 'HIGH_CARD', 'PAIR', 'TWO_PAIRS', 'THREE_OF_A_KIND', 'FULL_HOUSE', 'FOUR_OF_A_KIND', 'FIVE_OF_A_KIND'][self.evaluation]
-        return f'Hand({self.cards}, {self.bid}, {eval})'
+def pairs(hand):
+    return [card for card, count in card_count(hand).items() if count == 2]
 
 
-def parsed_hands(stream):
+def set_of(n, hand):
+    return any(count == n for count in card_count(hand).values())
+
+
+def substitute_joker(hand):
+    most_to_least = reversed(sorted(card_count(hand).items(), key=itemgetter(1)))
+    for substitute, _ in most_to_least:
+        if substitute != 'J':
+            return [
+                substitute if card == 'J' else card for card in hand
+            ]
+    return hand
+
+
+def evaluate(hand):
+    if 'J' in hand and TASK == 2:
+        hand = substitute_joker(hand)
+    for name, value, condition in HANDS:
+        if condition(hand):
+            return value
+
+
+def compare_cards(a, b):
+    a_value = list(map(CARDS.index, a.hand))
+    b_value = list(map(CARDS.index, b.hand))
+    if a_value > b_value:
+        return 1
+    elif a_value < b_value:
+        return -1
+    return 0
+
+
+def compare(a, b):
+    a_value = evaluate(a.hand)
+    b_value = evaluate(b.hand)
+    if a_value > b_value:
+        return 1
+    elif a_value < b_value:
+        return -1
+    return compare_cards(a, b)
+
+
+def winnings(records):
+    for rank, trick in records:
+        print(f'{rank} {trick.hand} {rank*trick.bid}')
+        yield rank*trick.bid
+
+
+def parse(stream):
     for line in stream:
-        cards, bid = line.strip().split()
-        yield Hand(cards, int(bid))
+        hand, bid = line.strip().split()
+        yield Trick(hand, int(bid))
 
 
-def winnings(hands):
-    result = []
-    for rank, hand in enumerate(hands, 1):
-        points = hand.bid * rank
-        print(f"{rank} {hand.cards} {points}")
-        result.append(hand.bid * rank)
-    return result
-
-
-print(sum(winnings(sorted(parsed_hands(sys.stdin)))))
+print(sum(winnings(enumerate(sorted(parse(sys.stdin), key=cmp_to_key(compare)), start=1))))
 
